@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Asistencia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #E6E6FA;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 600px;
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background: #FFB7C5;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin-top: 15px;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #967bb6;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #FFDAB9;
+            color: black;
+        }
+        .btn {
+            padding: 5px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .btn-edit {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-delete {
+            background: #FF5733;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Registro de Asistencia</h2>
+        <form id="asistenciaForm">
+            <input type="hidden" id="indiceEditar"> <!-- Para saber qué registro editar -->
+            
+            <label>Nombre:</label>
+            <input type="text" id="nombre" required>
+            
+            <label>Fecha y Hora de Llegada:</label>
+            <input type="datetime-local" id="fechaHora" required>
+            
+            <label>¿Ha faltado?</label>
+            <select id="faltado">
+                <option value="No">No</option>
+                <option value="Sí">Sí</option>
+            </select>
+            
+            <label>Observaciones:</label>
+            <textarea id="observaciones" rows="3"></textarea>
+            
+            <button type="button" onclick="registrarAsistencia()">Registrar</button>
+        </form>
+    </div>
+    
+    <div class="container">
+        <h2>Registros</h2>
+        <table id="tablaRegistros">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Fecha y Hora</th>
+                    <th>Faltado</th>
+                    <th>Observaciones</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Registros aparecerán aquí -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", cargarRegistros);
+
+        function registrarAsistencia() {
+            let nombre = document.getElementById("nombre").value;
+            let fechaHora = document.getElementById("fechaHora").value;
+            let faltado = document.getElementById("faltado").value;
+            let observaciones = document.getElementById("observaciones").value;
+            let indiceEditar = document.getElementById("indiceEditar").value;
+
+            if (nombre === "" || fechaHora === "") {
+                alert("Por favor, complete todos los campos obligatorios.");
+                return;
+            }
+
+            let registros = JSON.parse(localStorage.getItem("registrosAsistencia")) || [];
+
+            if (indiceEditar === "") {
+                // Agregar nuevo registro
+                registros.push({ nombre, fechaHora, faltado, observaciones });
+            } else {
+                // Editar registro existente
+                registros[indiceEditar] = { nombre, fechaHora, faltado, observaciones };
+                document.getElementById("indiceEditar").value = ""; // Limpiar campo oculto
+            }
+
+            localStorage.setItem("registrosAsistencia", JSON.stringify(registros));
+
+            cargarRegistros();
+            document.getElementById("asistenciaForm").reset();
+        }
+
+        function cargarRegistros() {
+            let registros = JSON.parse(localStorage.getItem("registrosAsistencia")) || [];
+            let tabla = document.getElementById("tablaRegistros").getElementsByTagName("tbody")[0];
+            tabla.innerHTML = ""; // Limpiar tabla
+
+            registros.forEach((registro, index) => {
+                let nuevaFila = tabla.insertRow();
+                nuevaFila.insertCell(0).innerText = registro.nombre;
+                nuevaFila.insertCell(1).innerText = registro.fechaHora;
+                nuevaFila.insertCell(2).innerText = registro.faltado;
+                nuevaFila.insertCell(3).innerText = registro.observaciones;
+                
+                let acciones = nuevaFila.insertCell(4);
+                let btnEditar = document.createElement("button");
+                btnEditar.innerText = "Editar";
+                btnEditar.className = "btn btn-edit";
+                btnEditar.onclick = function () { editarRegistro(index); };
+                
+                let btnEliminar = document.createElement("button");
+                btnEliminar.innerText = "Eliminar";
+                btnEliminar.className = "btn btn-delete";
+                btnEliminar.onclick = function () { eliminarRegistro(index); };
+
+                acciones.appendChild(btnEditar);
+                acciones.appendChild(btnEliminar);
+            });
+        }
+
+        function editarRegistro(indice) {
+            let registros = JSON.parse(localStorage.getItem("registrosAsistencia"));
+            let registro = registros[indice];
+
+            document.getElementById("nombre").value = registro.nombre;
+            document.getElementById("fechaHora").value = registro.fechaHora;
+            document.getElementById("faltado").value = registro.faltado;
+            document.getElementById("observaciones").value = registro.observaciones;
+            document.getElementById("indiceEditar").value = indice; // Guardar índice para edición
+        }
+
+        function eliminarRegistro(indice) {
+            let registros = JSON.parse(localStorage.getItem("registrosAsistencia"));
+            registros.splice(indice, 1); // Eliminar el registro del array
+            localStorage.setItem("registrosAsistencia", JSON.stringify(registros));
+            cargarRegistros(); // Recargar tabla
+        }
+    </script>
+</body>
+</html>
